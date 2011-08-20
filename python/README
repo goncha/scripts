@@ -1,0 +1,11 @@
+httpd.py		Simple HTTP Server
+merge_svnauthz.py	Merge individual svnauth files (belonging to single
+			project) into a whole svnauth deployed in Apache, Trac 
+			and SVN env
+prepare_opf.py		Generate kindlegen required .opf file from a set of HTML
+			doc files
+feed2mobi.py		Fetch feeds into ~/.feed2mobi, and store feeds status in
+			a sqlite3 db file, generate .mobi by kindlegen
+kindle_the_economist.py	Generate .mobi file from rared HTML packs at
+			http://www.verycd.com/topics/2874116/
+			

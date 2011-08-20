@@ -1,0 +1,7 @@
+.hg
+.hgignore
+CVS
+.cvsignore
+emacs/slime/doc
+*.elc
+*.pyc

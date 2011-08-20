@@ -1,0 +1,5 @@
+#name : {% for ... in ... %} ... {% endfor %}
+# --
+{% for ${var} in ${collection} %}
+$0
+{% endfor %}
