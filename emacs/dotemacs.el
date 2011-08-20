@@ -26,7 +26,8 @@
 
 (fset 'yes-or-no-p 'y-or-n-p)
 
-(tool-bar-mode 0)
+(if window-system
+    (tool-bar-mode 0))
 (column-number-mode 1)
 (global-font-lock-mode 1)
 (iswitchb-mode 1)
@@ -232,6 +233,7 @@ The value is non-nil if there were no error, nil if errors."
 ;;;; git
 (autoload 'git-status "git")
 (global-set-key (kbd "<f9>") 'git-status)
+
 
 ;;;; slime
 (load-library "slime-autoloads")
