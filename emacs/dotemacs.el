@@ -70,6 +70,10 @@
 
  ;; X11 in .Xresources
  ((x)
+  (setq default-frame-alist
+	'((vertical-scroll-bars nil)
+	  (background-color . "AliceBlue")
+	  (font . "-unknown-ProggyCleanTT-normal-normal-normal-*-16-*-*-*-m-0-iso10646-1")))
   ;; C-z freeze emacs under dwm, ooh damn dynamic window managers
   (global-unset-key (kbd "C-z")))
  )
@@ -247,7 +251,7 @@ The value is non-nil if there were no error, nil if errors."
 	      (setq slime-net-coding-system 'utf-8-unix)
 
 	      (setq common-lisp-hyperspec-root
-		    (concat "file://" (expand-file-name "~/public_html/doc/HyperSpec/")))
+		    (concat "file://" (expand-file-name "~/Documents/Lisp/HyperSpec/")))
 
 	      (global-set-key (kbd "<f12>") 'slime-selector)
 
@@ -260,20 +264,20 @@ The value is non-nil if there were no error, nil if errors."
 
 (setq slime-lisp-implementations
       `((sbcl
-	 (,(expand-file-name "~/local/opt/sbcl/bin/sbcl")
+	 (,(expand-file-name "~/local/bin/sbcl")
 	  ;; "--core" ,(expand-file-name "~/local/opt/sbcl/lib/sbcl/sbcl.core")
 	  "--dynamic-space-size" "200"
 	  ;; "--userinit" ,(expand-file-name "~/lisp/user-init.lisp")
 	  )
 	 :coding-system utf-8-unix)
 	(ccl
-	 (,(expand-file-name "~/local/opt/ccl/lx86cl64")
+	 (,(expand-file-name "~/local/bin/lx86cl64")
 	  ;; "-I" ,(expand-file-name "~/local/opt/ccl/lx86cl64.image")
 	  "-K" "utf-8" "-R" "200000000"
 	  )
 	 :coding-system utf-8-unix)
 	(cmucl
-	 (,(expand-file-name "~/local/opt/cmucl/bin/lisp")
+	 (,(expand-file-name "~/local/bin/lisp")
 	  "-dynamic-space-size" "200"
 	  )
 	 :coding-system utf-8-unix)))
