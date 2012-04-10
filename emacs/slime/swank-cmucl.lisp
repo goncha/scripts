@@ -41,14 +41,16 @@
       (error 'type-error
              :datum (read-char stream nil #\Null)
              :expected-type (stream-element-type stream)
-             :format-control "Trying to read characters from a binary stream."))
+             :format-control 
+             "Trying to read characters from a binary stream."))
     ;; Let's go as low level as it seems reasonable.
     (let* ((numbytes (- end start))
            (total-bytes 0))
       ;; read-n-bytes may return fewer bytes than requested, so we need
       ;; to keep trying.
       (loop while (plusp numbytes) do
-            (let ((bytes-read (system:read-n-bytes stream s start numbytes nil)))
+            (let ((bytes-read (system:read-n-bytes stream s 
+                                                   start numbytes nil)))
               (when (zerop bytes-read)
                 (return-from read-into-simple-string total-bytes))
               (incf total-bytes bytes-read)
@@ -427,13 +429,14 @@ NIL if we aren't compiling from a buffer.")
 (defimplementation swank-compile-file (input-file output-file
                                        load-p external-format
                                        &key policy)
-  (declare (ignore external-format policy))
+  (declare (ignore policy))
   (clear-xref-info input-file)
   (with-compilation-hooks ()
     (let ((*buffer-name* nil)
           (ext:*ignore-extra-close-parentheses* nil))
       (multiple-value-bind (output-file warnings-p failure-p)
-          (compile-file input-file :output-file output-file)
+          (compile-file input-file :output-file output-file 
+                        :external-format external-format)
         (values output-file warnings-p
                 (or failure-p
                     (when load-p

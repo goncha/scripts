@@ -950,12 +950,33 @@ For example, the function `case' has an indent property
                        (setq depth (1+ depth)))
               (error
                (setq depth lisp-indent-maximum-backtracking))))))
+
       (or calculated tentative-calculated
-          ;; Fallback. calculate-lisp-indent doesn't deal with
-          ;; things like (foo (or x
-          ;;                      y) t
-          ;;                  z)
-          ;; but would align the Z with Y.
+          ;; Fallback.
+          ;;
+          ;; Instead of punting directly to calculate-lisp-indent we handle a few
+          ;; of cases it doesn't deal with:
+          ;;
+          ;; A: (foo (
+          ;;          bar zot
+          ;;          quux))
+          ;;
+          ;;    would align QUUX with ZOT.
+          ;;
+          ;; B:
+          ;;   (foo (or x
+          ;;            y) t
+          ;;        z)
+          ;;
+          ;;   would align the Z with Y.
+          ;;
+          ;; C:
+          ;;   (foo ;; Comment
+          ;;        (bar)
+          ;;        ;; Comment 2
+          ;;        (quux))
+          ;;
+          ;;   would indent BAR and QUUX by one.
           (ignore-errors
             (save-excursion
               (goto-char indent-point)
@@ -966,11 +987,20 @@ For example, the function `case' has an indent property
                 (let ((one (current-column)))
                   (skip-chars-forward " \t")
                   (if (or (eolp) (looking-at ";"))
+                      ;; A.
                       (list one containing-form-start)
                     (forward-sexp 2)
                     (backward-sexp)
-                    (unless (= p (point))
-                      (list (current-column) containing-form-start)))))))))))
+                    (if (/= p (point))
+                        ;; B.
+                        (list (current-column) containing-form-start)
+                      (backward-sexp)
+                      (forward-sexp)
+                      (let ((tmp (+ (current-column) 1)))
+                        (skip-chars-forward " \t")
+                        (if (looking-at ";")
+                            ;; C.
+                            (list tmp containing-form-start)))))))))))))
 
 
 (defun common-lisp-indent-call-method (function method path state indent-point
@@ -1059,8 +1089,44 @@ optional\\|rest\\|key\\|allow-other-keys\\|aux\\|whole\\|body\\|environment\\|mo
                                         (+ col
                                            lisp-lambda-list-keyword-parameter-indentation))
                                next nil)
-                       (setq indent col))))
+                       (progn
+                         (setq indent col)))))
                  (or indent (1+ sexp-column)))))))))
+
+(defun common-lisp-lambda-list-initial-value-form-p (point)
+  (let ((state 'x)
+        (point (save-excursion
+                 (goto-char point)
+                 (back-to-indentation)
+                 (point))))
+    (save-excursion
+      (backward-sexp)
+      (down-list 1)
+      (while (and point (< (point) point))
+        (cond ((or (looking-at "&key") (looking-at "&optional"))
+               (setq state 'key))
+              ((looking-at lisp-indent-lambda-list-keywords-regexp)
+               (setq state 'x)))
+        (if (not (ignore-errors (forward-sexp) t))
+            (setq point nil)
+          (ignore-errors
+            (forward-sexp)
+            (backward-sexp))
+          (cond ((> (point) point)
+                 (backward-sexp)
+                 (when (eq state 'var)
+                   (setq state 'x))
+                 (or (ignore-errors
+                       (down-list 1)
+                       (cond ((> (point) point)
+                              (backward-up-list))
+                             ((eq 'key state)
+                              (setq state 'var)))
+                       t)
+                     (setq point nil)))
+                 ((eq state 'var)
+                  (setq state 'form))))))
+      (eq 'form state)))
 
 ;; Blame the crufty control structure on dynamic scoping
 ;;  -- not on me!
@@ -1119,16 +1185,20 @@ optional\\|rest\\|key\\|allow-other-keys\\|aux\\|whole\\|body\\|environment\\|mo
                                 normal-indent
                               (list normal-indent containing-form-start))))
               ((eq tem '&lambda)
-               (throw 'exit
-                      (cond ((null p)
-                             (list (+ sexp-column 4) containing-form-start))
-                            (t
-                             ;; Indentation within a lambda-list. -- dvl
-                             (list (lisp-indent-lambda-list
-                                    indent-point
-                                    sexp-column
-                                    containing-form-start)
-                                   containing-form-start)))))
+               (if (common-lisp-lambda-list-initial-value-form-p indent-point)
+                   (throw 'exit (if (consp normal-indent)
+                                    normal-indent
+                                  (list normal-indent containing-form-start)))
+                 (throw 'exit
+                        (cond ((null p)
+                               (list (+ sexp-column 4) containing-form-start))
+                              (t
+                               ;; Indentation within a lambda-list. -- dvl
+                               (list (lisp-indent-lambda-list
+                                      indent-point
+                                      sexp-column
+                                      containing-form-start)
+                                     containing-form-start))))))
               ((integerp tem)
                (throw 'exit
                       (if (null p)         ;not in subforms
